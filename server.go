@@ -67,7 +67,7 @@ func main() {
 		MAINTENANCE_MODE = true
 	}
 
-	db, err := gorm.Open("mysql", envConfig.DB.Username+":"+envConfig.DB.Password+"@tcp("+envConfig.DB.Address+":"+envConfig.DB.Port+")/"+envConfig.DB.DbName)
+	db, err := gorm.Open("mysql", envConfig.DB.Username+":"+envConfig.DB.Password+"@tcp("+envConfig.DB.Address+":"+envConfig.DB.Port+")/"+envConfig.DB.DbName+"?charset=utf8&parseTime=True")
 
 	models.DbUp(&db)
 
@@ -94,7 +94,7 @@ func main() {
 		r.Group("/v1", func(r martini.Router) {
 			r.Group("/auth", func(r martini.Router) {
 				r.Post("/login", controllers.Login)
-				r.Post("/create", binding.MultipartForm(controllers.CreateData{}), controllers.Create)
+				r.Post("/create", binding.Bind(controllers.CreateData{}), controllers.Create)
 			})
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
