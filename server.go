@@ -93,7 +93,7 @@ func main() {
 	m.Group("/api", func(r martini.Router) {
 		r.Group("/v1", func(r martini.Router) {
 			r.Group("/auth", func(r martini.Router) {
-				r.Post("/login", controllers.Login)
+				r.Post("/login", binding.Bind(controllers.LoginData{}), controllers.Login)
 				r.Post("/create", binding.Bind(controllers.CreateData{}), controllers.Create)
 			})
 			r.Group("/*", func(r martini.Router) {
