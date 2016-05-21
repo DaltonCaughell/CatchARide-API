@@ -39,11 +39,11 @@ type CreateData struct {
 }
 
 type AddCarData struct {
-	DLNumber              string `form:"DLNumber"`
-	CarBrand              string `form:"CarBrand"`
-	CarModel              string `form:"CarModel"`
-	CarSeats              uint8  `form:"CarSeats"`
-	CarLicensePlateNumber string `form:"CarLicensePlateNumber"`
+	DLNumber           string `form:"DLNumber"`
+	Brand              string `form:"Brand"`
+	Model              string `form:"Model"`
+	Seats              uint8  `form:"Seats"`
+	LicensePlateNumber string `form:"LicensePlateNumber"`
 }
 
 func (data *AddCarData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
@@ -51,11 +51,11 @@ func (data *AddCarData) Validate(errors binding.Errors, req *http.Request) bindi
 	v := validation.NewValidation(&errors, data)
 
 	v.Validate(&data.DLNumber).Range(2, 255)
-	v.Validate(&data.CarBrand).Range(2, 255)
-	v.Validate(&data.CarModel).Range(2, 255)
-	v.Validate(&data.CarLicensePlateNumber).Range(2, 255)
-	if data.CarSeats < 1 {
-		v.Errors.Add([]string{"CarSeats"}, "Validation Error", "Seat count cannot be less than 1")
+	v.Validate(&data.Brand).Range(2, 255)
+	v.Validate(&data.Model).Range(2, 255)
+	v.Validate(&data.LicensePlateNumber).Range(2, 255)
+	if data.Seats < 1 {
+		v.Errors.Add([]string{"Seats"}, "Validation Error", "Seat count cannot be less than 1")
 	}
 
 	return *v.Errors.(*binding.Errors)
