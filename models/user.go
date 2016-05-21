@@ -14,9 +14,9 @@ type User struct {
 	Email    string
 	Name     string
 	Phone    string
-	DLNumber string
-	Cars     []Car     `gorm:"ForeignKey:UserID"`
-	Sessions []Session `gorm:"ForeignKey:UserID"`
+	DLNumber string `gorm:"column:d_l_number"`
+	Cars     []Car
+	Sessions []Session
 }
 
 type Car struct {

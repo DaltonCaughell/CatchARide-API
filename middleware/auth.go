@@ -17,7 +17,7 @@ func BasicAuth(c martini.Context, req *http.Request, r render.Render, db *gorm.D
 		r.JSON(302, controllers.Response{Code: 0, Error: "Not Authorized", ErrorOn: ""})
 	} else {
 		user := &models.DbUser{}
-		if db.Model(&models.DbUser{}).Where(&models.DbUser{User: models.User{Model: gorm.Model{ID: session.UserID}}}).First(user).RecordNotFound() {
+		if db.Model(&models.DbUser{}).Where(&models.DbUser{User: models.User{Model: gorm.Model{ID: session.UserID}}}).First(user).Related(&user.Cars, "user_id").RecordNotFound() {
 			r.JSON(302, controllers.Response{Code: 0, Error: "Not Authorized", ErrorOn: ""})
 		} else {
 			c.Map(user)
