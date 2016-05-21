@@ -38,29 +38,6 @@ type CreateData struct {
 	Address  string `form:"Address" binding:"required"`
 }
 
-type AddCarData struct {
-	DLNumber           string `form:"DLNumber"`
-	Brand              string `form:"Brand"`
-	Model              string `form:"Model"`
-	Seats              uint8  `form:"Seats"`
-	LicensePlateNumber string `form:"LicensePlateNumber"`
-}
-
-func (data *AddCarData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-
-	v := validation.NewValidation(&errors, data)
-
-	v.Validate(&data.DLNumber).Range(2, 255)
-	v.Validate(&data.Brand).Range(2, 255)
-	v.Validate(&data.Model).Range(2, 255)
-	v.Validate(&data.LicensePlateNumber).Range(2, 255)
-	if data.Seats < 1 {
-		v.Errors.Add([]string{"Seats"}, "Validation Error", "Seat count cannot be less than 1")
-	}
-
-	return *v.Errors.(*binding.Errors)
-}
-
 func (data *LoginData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 
 	v := validation.NewValidation(&errors, data)

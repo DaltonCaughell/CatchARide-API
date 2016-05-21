@@ -98,6 +98,7 @@ func main() {
 			})
 			r.Group("/user", func(r martini.Router) {
 				r.Get("/me", controllers.Me)
+				r.Post("/addcar", controllers.AddCar)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
