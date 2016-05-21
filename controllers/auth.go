@@ -19,12 +19,6 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-type Response struct {
-	Code    int64
-	Error   string
-	ErrorOn string
-}
-
 type SessionResponse struct {
 	Response
 	Session *models.Session
@@ -87,9 +81,9 @@ func (data *CreateData) Validate(errors binding.Errors, req *http.Request) bindi
 	return *v.Errors.(*binding.Errors)
 }
 
-func Login(data LoginData, db gorm.DB, r render.Render) {
+func Login(data LoginData, db *gorm.DB, r render.Render) {
 	user := &models.DbUser{}
-	if db.Model(&models.DbUser{}).Where(&models.DbUser{User: models.User{Email: data.Email}}).First(user).RecordNotFound() {
+	if db.Model(&models.DbUser{}).Where("email = ?", data.Email).First(user).RecordNotFound() {
 		v := validation.NewValidation(new(binding.Errors), data)
 		v.Errors.Add([]string{"Email"}, "Validation Error", "Username/Password Incorrect")
 		r.JSON(422, v.Errors)
@@ -102,7 +96,7 @@ func Login(data LoginData, db gorm.DB, r render.Render) {
 		r.JSON(422, v.Errors)
 		return
 	} else {
-		session, err := models.NewSession(&db, user)
+		session, err := models.NewSession(db, user)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
 			log.Fatal(err)
@@ -112,9 +106,9 @@ func Login(data LoginData, db gorm.DB, r render.Render) {
 	}
 }
 
-func Create(data CreateData, db gorm.DB, r render.Render) {
+func Create(data CreateData, db *gorm.DB, r render.Render) {
 	var count uint8
-	db.Model(&models.DbUser{}).Where(&models.DbUser{User: models.User{Email: data.Email}}).Count(&count)
+	db.Model(&models.DbUser{}).Where("email = ?", data.Email).Count(&count)
 	if count != 0 {
 		v := validation.NewValidation(new(binding.Errors), data)
 		v.Errors.Add([]string{"Email"}, "Validation Error", "Email already exists")
@@ -133,7 +127,7 @@ func Create(data CreateData, db gorm.DB, r render.Render) {
 		if data.IsDriver {
 			db.Create(&models.Car{UserID: user.ID, Brand: data.CarBrand, CarModel: data.CarModel, Seats: data.CarSeats, LicensePlateNumber: data.CarLicensePlateNumber})
 		}
-		session, err := models.NewSession(&db, user)
+		session, err := models.NewSession(db, user)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
 			log.Fatal(err)

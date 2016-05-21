@@ -31,7 +31,7 @@ type Car struct {
 type Session struct {
 	gorm.Model
 	UserID uint
-	Key    string
+	ApiKey string
 }
 
 type DbUser struct {
@@ -58,7 +58,7 @@ func NewSession(db *gorm.DB, user *DbUser) (*Session, error) {
 		log.Fatal(err)
 		return nil, err
 	}
-	session := &Session{UserID: user.User.ID, Key: base64.RawStdEncoding.EncodeToString(base)}
+	session := &Session{UserID: user.User.ID, ApiKey: base64.RawStdEncoding.EncodeToString(base)}
 	db.Create(session)
 	return session, nil
 }

@@ -69,7 +69,7 @@ func main() {
 
 	db, err := gorm.Open("mysql", envConfig.DB.Username+":"+envConfig.DB.Password+"@tcp("+envConfig.DB.Address+":"+envConfig.DB.Port+")/"+envConfig.DB.DbName+"?charset=utf8&parseTime=True")
 
-	models.DbUp(&db)
+	models.DbUp(db)
 
 	if err != nil {
 		log.Printf("DB Connection Error: %s", err.Error())
@@ -96,6 +96,9 @@ func main() {
 				r.Post("/login", binding.Bind(controllers.LoginData{}), controllers.Login)
 				r.Post("/create", binding.Bind(controllers.CreateData{}), controllers.Create)
 			})
+			r.Group("/user", func(r martini.Router) {
+				r.Get("/me", controllers.Me)
+			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
 		})
