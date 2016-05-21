@@ -31,17 +31,34 @@ type LoginData struct {
 }
 
 type CreateData struct {
-	Name                  string `form:"Name" binding:"required"`
-	Email                 string `form:"Email" binding:"required"`
-	Password              string `form:"Password" binding:"required"`
-	Phone                 string `form:"Phone" binding:"required"`
-	Address               string `form:"Address" binding:"required"`
+	Name     string `form:"Name" binding:"required"`
+	Email    string `form:"Email" binding:"required"`
+	Password string `form:"Password" binding:"required"`
+	Phone    string `form:"Phone" binding:"required"`
+	Address  string `form:"Address" binding:"required"`
+}
+
+type AddCarData struct {
 	DLNumber              string `form:"DLNumber"`
 	CarBrand              string `form:"CarBrand"`
 	CarModel              string `form:"CarModel"`
 	CarSeats              uint8  `form:"CarSeats"`
 	CarLicensePlateNumber string `form:"CarLicensePlateNumber"`
-	IsDriver              bool   `form:"IsDriver"`
+}
+
+func (data *AddCarData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
+
+	v := validation.NewValidation(&errors, data)
+
+	v.Validate(&data.DLNumber).Range(2, 255)
+	v.Validate(&data.CarBrand).Range(2, 255)
+	v.Validate(&data.CarModel).Range(2, 255)
+	v.Validate(&data.CarLicensePlateNumber).Range(2, 255)
+	if data.CarSeats < 1 {
+		v.Errors.Add([]string{"CarSeats"}, "Validation Error", "Seat count cannot be less than 1")
+	}
+
+	return *v.Errors.(*binding.Errors)
 }
 
 func (data *LoginData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
@@ -67,16 +84,6 @@ func (data *CreateData) Validate(errors binding.Errors, req *http.Request) bindi
 	v.Validate(&data.Password).Range(8, 255)
 	v.Validate(&data.Phone).Range(10, 255)
 	v.Validate(&data.Address).Range(10, 255)
-
-	if data.IsDriver {
-		v.Validate(&data.DLNumber).Range(2, 255)
-		v.Validate(&data.CarBrand).Range(2, 255)
-		v.Validate(&data.CarModel).Range(2, 255)
-		v.Validate(&data.CarLicensePlateNumber).Range(2, 255)
-		if data.CarSeats < 1 {
-			v.Errors.Add([]string{"CarSeats"}, "Validation Error", "Seat count cannot be less than 1")
-		}
-	}
 
 	return *v.Errors.(*binding.Errors)
 }
@@ -122,11 +129,8 @@ func Create(data CreateData, db *gorm.DB, r render.Render) {
 			return
 		}
 		hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
-		user := &models.DbUser{User: models.User{Name: data.Name, Email: data.Email, Phone: data.Phone, DLNumber: data.DLNumber}, Hash: hash, Salt: salt}
+		user := &models.DbUser{User: models.User{Name: data.Name, Email: data.Email, Phone: data.Phone}, Hash: hash, Salt: salt}
 		db.Create(user)
-		if data.IsDriver {
-			db.Create(&models.Car{UserID: user.ID, Brand: data.CarBrand, CarModel: data.CarModel, Seats: data.CarSeats, LicensePlateNumber: data.CarLicensePlateNumber})
-		}
 		session, err := models.NewSession(db, user)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
