@@ -11,11 +11,11 @@ import (
 )
 
 type AddCarData struct {
-	DLNumber           string `form:"DLNumber"`
-	Brand              string `form:"Brand"`
-	Model              string `form:"Model"`
-	Seats              uint8  `form:"Seats"`
-	LicensePlateNumber string `form:"LicensePlateNumber"`
+	DLNumber           string `form:"DLNumber" binding:"required"`
+	Brand              string `form:"Brand" binding:"required"`
+	Model              string `form:"Model" binding:"required"`
+	Seats              uint8  `form:"Seats" binding:"required"`
+	LicensePlateNumber string `form:"LicensePlateNumber" binding:"required"`
 }
 
 func (data *AddCarData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
