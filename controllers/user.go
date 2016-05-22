@@ -37,12 +37,12 @@ func Me(r render.Render, user *models.DbUser) {
 	r.JSON(200, user.User)
 }
 
-func AddCar(r render.Render, user *models.DbUser, data AddCarData, db gorm.DB) {
+func AddCar(r render.Render, user *models.DbUser, data AddCarData, db *gorm.DB) {
 	if data.DLNumber != "" {
 		user.DLNumber = data.DLNumber
 		db.Save(user)
 	}
 	car := &models.Car{Brand: data.Brand, CarModel: data.Model, LicensePlateNumber: data.LicensePlateNumber, Seats: data.Seats}
 	db.Create(car)
-	r.JSON(200, Response{Code: 0, Error: "", ErrorOn: ""})
+	r.JSON(200, car)
 }

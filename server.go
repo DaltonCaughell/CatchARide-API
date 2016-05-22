@@ -41,7 +41,7 @@ func main() {
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:  []string{"*"},
 		AllowMethods:  []string{"GET", "POST"},
-		AllowHeaders:  []string{"Origin", "Content-Type"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "X-API-KEY"},
 		ExposeHeaders: []string{"Content-Length"},
 	}))
 
@@ -98,7 +98,7 @@ func main() {
 			})
 			r.Group("/user", func(r martini.Router) {
 				r.Get("/me", controllers.Me)
-				r.Post("/addcar", controllers.AddCar)
+				r.Post("/addcar", binding.Bind(controllers.AddCarData{}), controllers.AddCar)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
