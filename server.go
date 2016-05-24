@@ -100,6 +100,9 @@ func main() {
 				r.Get("/me", controllers.Me)
 				r.Post("/addcar", binding.Bind(controllers.AddCarData{}), controllers.AddCar)
 			}, middleware.BasicAuth)
+			r.Group("/parking", func(r martini.Router) {
+				r.Get("/all", controllers.All)
+			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
 		})
@@ -108,6 +111,8 @@ func main() {
 	m.Get("/", func() string {
 		return "Status: Good"
 	})
+
+	go models.FakeParking(db)
 
 	m.Run()
 }

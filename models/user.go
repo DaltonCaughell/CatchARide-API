@@ -48,6 +48,8 @@ func DbUp(db *gorm.DB) {
 	db.AutoMigrate(&DbUser{})
 	db.AutoMigrate(&Car{})
 	db.AutoMigrate(&Session{})
+	db.AutoMigrate(&ParkingLot{})
+	db.AutoMigrate(&ParkingLotNotification{})
 	return
 }
 
