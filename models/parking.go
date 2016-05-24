@@ -36,6 +36,6 @@ func FakeParking(db *gorm.DB) {
 			db.Save(&lot)
 		}
 		log.Print("Swapping Parking")
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
