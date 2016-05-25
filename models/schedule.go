@@ -18,4 +18,6 @@ type ScheduledRide struct {
 	ToLon    float64
 	ToLat    float64
 	ChatID   uint
+	Car      Car
+	User     User
 }

@@ -8,6 +8,7 @@ type ChatMessage struct {
 	FromUserID uint
 	Message    string
 	ToUserID   uint
+	User       User
 }
 
 type Chat struct {

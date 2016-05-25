@@ -132,5 +132,8 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 	} else {
 		r.JSON(200, nil)
 	}
+}
+
+func GetScheduledRides(r render.Render, user *models.DbUser, db *gorm.DB) {
 
 }
