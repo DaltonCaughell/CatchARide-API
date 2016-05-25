@@ -96,6 +96,7 @@ func main() {
 			}, middleware.BasicAuth)
 			r.Group("/chat", func(r martini.Router) {
 				r.Get("/messages/:ChatID", controllers.Messages)
+				r.Post("/send/:ChatID", binding.Bind(controllers.SendData{}), controllers.Send)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
