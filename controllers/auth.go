@@ -97,6 +97,7 @@ func Create(data CreateData, db *gorm.DB, r render.Render) {
 		v := validation.NewValidation(new(binding.Errors), data)
 		v.Errors.Add([]string{"Email"}, "Validation Error", "Email already exists")
 		r.JSON(422, v.Errors)
+		return
 	} else {
 		salt := make([]byte, 32)
 		_, err := io.ReadFull(rand.Reader, salt)

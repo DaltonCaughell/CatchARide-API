@@ -6,6 +6,8 @@ import (
 	"CatchARide-API/models"
 	"log"
 
+	"CatchARide-API/config"
+
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
@@ -14,22 +16,6 @@ import (
 	"github.com/martini-contrib/render"
 	"gopkg.in/gcfg.v1"
 )
-
-type EnvConfig struct {
-	DB struct {
-		Username string
-		Password string
-		Address  string
-		Port     string
-		DbName   string
-	}
-}
-
-type GlobalConfig struct {
-	Test struct {
-		Good bool
-	}
-}
 
 var MAINTENANCE_MODE bool = false
 
@@ -45,7 +31,7 @@ func main() {
 		ExposeHeaders: []string{"Content-Length"},
 	}))
 
-	var globalConfig GlobalConfig
+	var globalConfig config.GlobalConfig
 
 	err := gcfg.ReadFileInto(&globalConfig, "config/global.conf")
 
@@ -54,7 +40,7 @@ func main() {
 		MAINTENANCE_MODE = true
 	}
 
-	var envConfig EnvConfig
+	var envConfig config.EnvConfig
 
 	if martini.Env == "development" {
 		err = gcfg.ReadFileInto(&envConfig, "config/dev.conf")
@@ -66,6 +52,8 @@ func main() {
 		log.Printf("Env Config Load Fail: %s", err.Error())
 		MAINTENANCE_MODE = true
 	}
+
+	controllers.RegConfig(globalConfig, envConfig)
 
 	db, err := gorm.Open("mysql", envConfig.DB.Username+":"+envConfig.DB.Password+"@tcp("+envConfig.DB.Address+":"+envConfig.DB.Port+")/"+envConfig.DB.DbName+"?charset=utf8&parseTime=True")
 
@@ -102,6 +90,9 @@ func main() {
 			}, middleware.BasicAuth)
 			r.Group("/parking", func(r martini.Router) {
 				r.Get("/all", controllers.All)
+			}, middleware.BasicAuth)
+			r.Group("/search", func(r martini.Router) {
+				r.Post("/search", binding.Bind(controllers.SearchData{}), controllers.Search)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
