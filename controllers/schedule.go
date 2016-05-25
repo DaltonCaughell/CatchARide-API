@@ -18,21 +18,20 @@ import (
 )
 
 type SearchData struct {
-	IsDriver       bool   `form:"IsDriver" binding:"required"`
-	From           string `form:"From" binding:"required"`
-	To             string `form:"To" binding:"required"`
-	DateTimeString string `form:"DateTime" binding:"required"`
-	DateTime       time.Time
-	FromLon        float64
-	FromLat        float64
-	ToLon          float64
-	ToLat          float64
+	IsDriver bool      `form:"IsDriver"`
+	From     string    `form:"From" binding:"required"`
+	To       string    `form:"To" binding:"required"`
+	DateTime time.Time `form:"DateTime" binding:"required"`
+	FromLon  float64
+	FromLat  float64
+	ToLon    float64
+	ToLat    float64
 }
 
 func geoCode(address string) (float64, float64, error) {
 	c, err := maps.NewClient(maps.WithAPIKey("AIzaSyB8xMuFge6YmanK7_4kQFlFdkdvvDLhZSE"), maps.WithRateLimit(2))
 	if err != nil {
-		log.Fatalf("fatal error: %s", err)
+		log.Printf("fatal error: %s", err)
 		return 0, 0, err
 	}
 	r := &maps.GeocodingRequest{
@@ -40,7 +39,7 @@ func geoCode(address string) (float64, float64, error) {
 	}
 	resp, err := c.Geocode(context.Background(), r)
 	if err != nil {
-		log.Fatalf("fatal error: %s", err)
+		log.Printf("fatal error geo-codeing: %s Address: %s", err, address)
 		return 0, 0, err
 	}
 	if len(resp) == 0 {
@@ -56,8 +55,13 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 
 	v := validation.NewValidation(&errors, data)
 
+	if len(errors) != 0 {
+		return *v.Errors.(*binding.Errors)
+	}
+
 	if data.From != "SCHOOL" && data.To != "SCHOOL" {
 		v.Errors.Add([]string{"From"}, "Validation Error", "At least one address must be school")
+		return *v.Errors.(*binding.Errors)
 	}
 
 	if data.From == "SCHOOL" {
@@ -78,11 +82,7 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 		}
 	}
 
-	layout := "2006-01-02T15:04:05.000Z"
-	data.DateTime, err = time.Parse(layout, data.DateTimeString)
-	if err != nil {
-		v.Errors.Add([]string{"Date"}, "Validation Error", "Invalid Date")
-	}
+	log.Printf("%d", data.DateTime.Year())
 
 	return *v.Errors.(*binding.Errors)
 }

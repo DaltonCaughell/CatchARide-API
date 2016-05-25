@@ -91,7 +91,7 @@ func main() {
 			r.Group("/parking", func(r martini.Router) {
 				r.Get("/all", controllers.All)
 			}, middleware.BasicAuth)
-			r.Group("/search", func(r martini.Router) {
+			r.Group("/schedule", func(r martini.Router) {
 				r.Post("/search", binding.Bind(controllers.SearchData{}), controllers.Search)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
