@@ -89,44 +89,48 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 
 func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) {
 
-	if len(user.Cars) == 0 {
-		v := validation.NewValidation(new(binding.Errors), data)
-		v.Errors.Add([]string{"Car"}, "Validation Error", "You do not have any registered cars")
-		r.JSON(422, v.Errors)
-		return
+	if data.IsDriver {
+		if len(user.Cars) == 0 {
+			v := validation.NewValidation(new(binding.Errors), data)
+			v.Errors.Add([]string{"Car"}, "Validation Error", "You do not have any registered cars")
+			r.JSON(422, v.Errors)
+			return
+		}
+
+		chat := &models.Chat{}
+		db.Save(chat)
+
+		userChat := &models.UserChat{
+			UserID: user.ID,
+			ChatID: chat.ID,
+		}
+		db.Save(userChat)
+
+		ride := &models.ScheduledRide{
+			UserID:   user.ID,
+			CarID:    user.Cars[0].ID,
+			From:     data.From,
+			To:       data.To,
+			DateTime: data.DateTime,
+			FromLat:  data.FromLat,
+			FromLon:  data.FromLon,
+			ToLat:    data.ToLat,
+			ToLon:    data.ToLon,
+			ChatID:   chat.ID,
+		}
+		db.Save(ride)
+
+		message := &models.ChatMessage{
+			ChatID:     chat.ID,
+			ToUserID:   user.ID,
+			FromUserID: 0,
+			Message:    "Your Ride Has Been Scheduled!",
+		}
+		db.Save(message)
+
+		r.JSON(200, ride)
+	} else {
+		r.JSON(200, nil)
 	}
-
-	chat := &models.Chat{}
-	db.Save(chat)
-
-	userChat := &models.UserChat{
-		UserID: user.ID,
-		ChatID: chat.ID,
-	}
-	db.Save(userChat)
-
-	ride := &models.ScheduledRide{
-		UserID:   user.ID,
-		CarID:    user.Cars[0].ID,
-		From:     data.From,
-		To:       data.To,
-		DateTime: data.DateTime,
-		FromLat:  data.FromLat,
-		FromLon:  data.FromLon,
-		ToLat:    data.ToLat,
-		ToLon:    data.ToLon,
-		ChatID:   chat.ID,
-	}
-	db.Save(ride)
-
-	message := &models.ChatMessage{
-		ChatID:     chat.ID,
-		ToUserID:   user.ID,
-		FromUserID: 0,
-		Message:    "Your Ride Has Been Scheduled!",
-	}
-	db.Save(message)
-
-	r.JSON(200, ride)
 
 }
