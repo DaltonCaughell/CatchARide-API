@@ -94,6 +94,9 @@ func main() {
 			r.Group("/schedule", func(r martini.Router) {
 				r.Post("/search", binding.Bind(controllers.SearchData{}), controllers.Search)
 			}, middleware.BasicAuth)
+			r.Group("/chat", func(r martini.Router) {
+				r.Get("/messages/:ChatID", controllers.Messages)
+			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
 		})
