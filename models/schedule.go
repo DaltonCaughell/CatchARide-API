@@ -20,4 +20,5 @@ type ScheduledRide struct {
 	ChatID   uint
 	Car      Car
 	User     User
+	DistFrom float64 `gorm:"-"`
 }

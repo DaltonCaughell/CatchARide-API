@@ -12,6 +12,7 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/jamieomatthews/validation"
 	"github.com/jinzhu/gorm"
+	"github.com/kellydunn/golang-geo"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
 	"golang.org/x/net/context"
@@ -131,7 +132,21 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 
 		r.JSON(200, ride)
 	} else {
-		r.JSON(200, nil)
+		var rides []models.ScheduledRide
+		if data.From == "SCHOOL" {
+			db.Where("`from` = ? AND date_time < ? AND date_time > ?", "SCHOOL", data.DateTime, data.DateTime.Add(-1*time.Minute*30)).Find(&rides)
+			for index, ride := range rides {
+				p := geo.NewPoint(data.ToLat, data.ToLon)
+				rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.ToLat, ride.ToLon))
+			}
+		} else {
+			db.Where("`to` = ? AND date_time < ? AND date_time > ?", "SCHOOL", data.DateTime, data.DateTime.Add(-1*time.Minute*30)).Find(&rides)
+			for index, ride := range rides {
+				p := geo.NewPoint(data.FromLat, data.FromLon)
+				rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.FromLat, ride.FromLon))
+			}
+		}
+		r.JSON(200, rides)
 	}
 }
 
