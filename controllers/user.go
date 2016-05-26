@@ -42,7 +42,7 @@ func AddCar(r render.Render, user *models.DbUser, data AddCarData, db *gorm.DB) 
 		user.DLNumber = data.DLNumber
 		db.Save(user)
 	}
-	car := &models.Car{Brand: data.Brand, CarModel: data.Model, LicensePlateNumber: data.LicensePlateNumber, Seats: data.Seats}
+	car := &models.Car{Brand: data.Brand, CarModel: data.Model, LicensePlateNumber: data.LicensePlateNumber, Seats: data.Seats, UserID: user.ID}
 	db.Create(car)
 	r.JSON(200, car)
 }
