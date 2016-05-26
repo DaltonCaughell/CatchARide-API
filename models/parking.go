@@ -3,7 +3,6 @@ package models
 import (
 	"math/rand"
 
-	"log"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -35,7 +34,6 @@ func FakeParking(db *gorm.DB) {
 			lot.Available = uint16(rand.Intn(int(lot.Total)))
 			db.Save(&lot)
 		}
-		log.Print("Swapping Parking")
 		time.Sleep(5 * time.Second)
 	}
 }

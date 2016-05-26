@@ -9,6 +9,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/go-martini/martini"
 	"github.com/jamieomatthews/validation"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/binding"
@@ -66,7 +67,7 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 
 	if data.From == "SCHOOL" {
 		data.FromLat = globalConfig.Locations.SchoolLat
-		data.FromLon = globalConfig.Locations.SchoolLat
+		data.FromLon = globalConfig.Locations.SchoolLon
 	} else {
 		if data.FromLat, data.FromLon, err = geoCode(data.From); err != nil {
 			v.Errors.Add([]string{"From"}, "Validation Error", "Invalid from address")
@@ -75,7 +76,7 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 
 	if data.To == "SCHOOL" {
 		data.ToLat = globalConfig.Locations.SchoolLat
-		data.ToLon = globalConfig.Locations.SchoolLat
+		data.ToLon = globalConfig.Locations.SchoolLon
 	} else {
 		if data.ToLat, data.ToLon, err = geoCode(data.To); err != nil {
 			v.Errors.Add([]string{"To"}, "Validation Error", "Invalid to address")
@@ -135,5 +136,19 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 }
 
 func GetScheduledRides(r render.Render, user *models.DbUser, db *gorm.DB) {
+	var rides []models.ScheduledRide
+	db.Where("user_id = ?", user.ID).Find(&rides)
+	for index, ride := range rides {
+		db.Where("id = ?", ride.CarID).First(&rides[index].Car)
+		db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&rides[index].User)
+	}
+	r.JSON(200, rides)
+}
 
+func Ride(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	ride := &models.ScheduledRide{}
+	db.Where("id = ?", params["RideID"]).First(&ride)
+	db.Where("id = ?", ride.CarID).First(&ride.Car)
+	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
+	r.JSON(200, ride)
 }

@@ -93,6 +93,8 @@ func main() {
 			}, middleware.BasicAuth)
 			r.Group("/schedule", func(r martini.Router) {
 				r.Post("/search", binding.Bind(controllers.SearchData{}), controllers.Search)
+				r.Get("/me", controllers.GetScheduledRides)
+				r.Get("/ride/:RideID", controllers.Ride)
 			}, middleware.BasicAuth)
 			r.Group("/chat", func(r martini.Router) {
 				r.Get("/messages/:ChatID", controllers.Messages)
