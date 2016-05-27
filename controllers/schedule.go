@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"CatchARide-API/config"
 	"CatchARide-API/models"
 	"net/http"
 
@@ -134,13 +135,13 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 	} else {
 		var rides []models.ScheduledRide
 		if data.From == "SCHOOL" {
-			db.Where("`from` = ? AND date_time < ? AND date_time > ?", "SCHOOL", data.DateTime, data.DateTime.Add(-1*time.Minute*30)).Find(&rides)
+			db.Where("`from` = ? AND date_time <= ? AND date_time > ?", "SCHOOL", data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT)).Find(&rides)
 			for index, ride := range rides {
 				p := geo.NewPoint(data.ToLat, data.ToLon)
 				rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.ToLat, ride.ToLon))
 			}
 		} else {
-			db.Where("`to` = ? AND date_time < ? AND date_time > ?", "SCHOOL", data.DateTime, data.DateTime.Add(-1*time.Minute*30)).Find(&rides)
+			db.Where("`to` = ? AND date_time <= ? AND date_time > ?", "SCHOOL", data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT)).Find(&rides)
 			for index, ride := range rides {
 				p := geo.NewPoint(data.FromLat, data.FromLon)
 				rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.FromLat, ride.FromLon))
