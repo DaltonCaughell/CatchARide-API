@@ -94,14 +94,14 @@ func Join(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Para
 
 	ride := &models.ScheduledRide{}
 
-	if ride.Seats <= 0 {
-		r.JSON(403, struct{}{})
-		return
-	}
-
 	db.Where("id = ?", params["RideID"]).First(ride)
 	db.Where("id = ?", ride.CarID).First(&ride.Car)
 	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
+
+	if ride.Seats <= 0 {
+		r.JSON(422, struct{}{})
+		return
+	}
 
 	driverMessage := &models.ChatMessage{
 		ToUserID:   ride.User.ID,
