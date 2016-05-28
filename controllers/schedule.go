@@ -229,6 +229,14 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 func GetScheduledRides(r render.Render, user *models.DbUser, db *gorm.DB) {
 	var rides []models.ScheduledRide
 	db.Where("user_id = ?", user.ID).Find(&rides)
+	var pRides []models.Passenger
+	db.Where("user_id = ?", user.ID).Find(&pRides)
+	for _, p := range pRides {
+		ride := models.ScheduledRide{}
+		db.Where("id = ?", p.RideID).First(&ride)
+		ride.Approved = p.Approved
+		rides = append(rides, ride)
+	}
 	for index, ride := range rides {
 		db.Where("id = ?", ride.CarID).First(&rides[index].Car)
 		db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&rides[index].User)

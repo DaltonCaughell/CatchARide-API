@@ -21,6 +21,7 @@ type ScheduledRide struct {
 	Car      Car
 	User     User
 	DistFrom float64 `gorm:"-"`
+	Approved bool    `gorm:"-"`
 }
 
 type RideSearch struct {

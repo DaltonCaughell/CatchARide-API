@@ -4,8 +4,6 @@ import (
 	"CatchARide-API/models"
 	"strconv"
 
-	"log"
-
 	"github.com/go-martini/martini"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/render"
@@ -27,9 +25,12 @@ func Messages(r render.Render, user *models.DbUser, db *gorm.DB, params martini.
 		db.Where("chat_id = ? && (to_user_id = ? || to_user_id = ?)", params["ChatID"], user.ID, 0).Find(&messages)
 	} else {
 		passenger := &models.Passenger{}
-		log.Printf("%d", ride.ID)
 		if !db.Where("ride_id = ?", ride.ID).First(passenger).RecordNotFound() {
-			db.Where("chat_id = ? && (to_user_id = ?)", params["ChatID"], user.ID).Find(&messages)
+			if passenger.Approved {
+				db.Where("chat_id = ? && (to_user_id = ? || to_user_id = ?)", params["ChatID"], user.ID, 0).Find(&messages)
+			} else {
+				db.Where("chat_id = ? && (to_user_id = ?)", params["ChatID"], user.ID).Find(&messages)
+			}
 		}
 	}
 
