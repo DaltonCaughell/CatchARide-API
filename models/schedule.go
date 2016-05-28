@@ -22,3 +22,25 @@ type ScheduledRide struct {
 	User     User
 	DistFrom float64 `gorm:"-"`
 }
+
+type RideSearch struct {
+	gorm.Model
+	UserID   uint
+	From     string
+	To       string
+	DateTime time.Time
+	FromLon  float64
+	FromLat  float64
+	ToLon    float64
+	ToLat    float64
+	User     User
+	Notify   bool
+}
+
+type Passenger struct {
+	gorm.Model
+	UserID   uint
+	DriverID uint
+	RideID   uint
+	Approved bool
+}
