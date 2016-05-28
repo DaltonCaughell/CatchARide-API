@@ -93,6 +93,12 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 func Join(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
 
 	ride := &models.ScheduledRide{}
+
+	if ride.Seats <= 0 {
+		r.JSON(403, struct{}{})
+		return
+	}
+
 	db.Where("id = ?", params["RideID"]).First(ride)
 	db.Where("id = ?", ride.CarID).First(&ride.Car)
 	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
@@ -117,14 +123,23 @@ func Join(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Para
 
 	db.Save(riderMessage)
 
+	search := &models.RideSearch{}
+
+	db.Where("id = ?", params["SearchID"]).First(search)
+
 	passenger := &models.Passenger{
-		UserID:   user.ID,
-		RideID:   ride.ID,
-		DriverID: ride.User.ID,
-		Approved: false,
+		UserID:       user.ID,
+		RideID:       ride.ID,
+		DriverID:     ride.User.ID,
+		Approved:     false,
+		RideSearchID: search.ID,
 	}
 
 	db.Save(passenger)
+
+	ride.Seats--
+
+	db.Save(ride)
 
 	r.JSON(200, struct {
 		Ride      *models.ScheduledRide
@@ -135,20 +150,78 @@ func Join(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Para
 	})
 }
 
+func managePassenger(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params, ack bool) {
+	message := &models.ChatMessage{}
+	db.Where("id = ?", params["MessageID"]).First(message)
+	if message.Ack {
+		r.JSON(200, struct{}{})
+		return
+	}
+	message.Ack = true
+	db.Save(message)
+	ride := &models.ScheduledRide{}
+	db.Where("id = ?", params["RideID"]).First(&ride)
+	db.Where("id = ?", ride.UserID).First(&ride.User)
+	passenger := &models.DbUser{}
+	db.Where("id = ?", message.FromUserID).First(passenger)
+	var mText string
+	if ack {
+		mText = passenger.Name + " has joined your car!"
+	} else {
+		mText = passenger.Name + " was removed from your car!"
+	}
+	ackMessage := &models.ChatMessage{
+		FromUserID: 0,
+		ToUserID:   user.ID,
+		ChatID:     message.ChatID,
+		Message:    mText,
+	}
+	db.Save(ackMessage)
+	if ack {
+		mText = "Your ride request was approved!"
+	} else {
+		mText = "Your ride request was rejected!"
+	}
+	ackMessage = &models.ChatMessage{
+		FromUserID: 0,
+		ToUserID:   message.FromUserID,
+		ChatID:     message.ChatID,
+		Message:    mText,
+	}
+	db.Save(ackMessage)
+	pRide := &models.Passenger{}
+	db.Where("user_id = ? AND driver_id = ? && ride_id = ?", passenger.ID, user.ID, ride.ID).First(pRide)
+	pRide.Approved = ack
+	db.Save(pRide)
+	if !ack {
+		ride.Seats++
+	}
+	db.Save(ride)
+	r.JSON(200, struct{}{})
+}
+
+func AcceptPassenger(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	managePassenger(r, user, db, params, true)
+}
+
+func RejectPassenger(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	managePassenger(r, user, db, params, false)
+}
+
 func Available(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
 	var rides []models.ScheduledRide
 	data := &models.RideSearch{}
 	db.Where("id = ?", params["SearchID"]).First(data)
 	if data.From == "SCHOOL" {
-		db.Where("`from` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ?", "SCHOOL",
-			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID).Find(&rides)
+		db.Where("`from` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ? AND seats > ?", "SCHOOL",
+			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0).Find(&rides)
 		for index, ride := range rides {
 			p := geo.NewPoint(data.ToLat, data.ToLon)
 			rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.ToLat, ride.ToLon))
 		}
 	} else {
-		db.Where("`to` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ?", "SCHOOL",
-			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID).Find(&rides)
+		db.Where("`to` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ? AND seats > ?", "SCHOOL",
+			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0).Find(&rides)
 		for index, ride := range rides {
 			p := geo.NewPoint(data.FromLat, data.FromLon)
 			rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.FromLat, ride.FromLon))
@@ -197,6 +270,7 @@ func Search(r render.Render, user *models.DbUser, db *gorm.DB, data SearchData) 
 			ToLat:    data.ToLat,
 			ToLon:    data.ToLon,
 			ChatID:   chat.ID,
+			Seats:    user.Cars[0].Seats,
 		}
 		db.Save(ride)
 
@@ -249,5 +323,17 @@ func Ride(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Para
 	db.Where("id = ?", params["RideID"]).First(&ride)
 	db.Where("id = ?", ride.CarID).First(&ride.Car)
 	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
+	db.Where("ride_id = ? AND approved = ?", ride.ID, true).Find(&ride.Passengers)
+	for index, p := range ride.Passengers {
+		db.Where("id = ?", p.RideSearchID).First(&ride.Passengers[index].Details)
+		if ride.From == "SCHOOL" {
+			p := geo.NewPoint(ride.Passengers[index].Details.ToLat, ride.Passengers[index].Details.ToLon)
+			ride.Passengers[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.ToLat, ride.ToLon))
+		} else {
+			p := geo.NewPoint(ride.Passengers[index].Details.FromLat, ride.Passengers[index].Details.FromLon)
+			ride.Passengers[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.FromLat, ride.FromLon))
+		}
+		db.Model(&models.DbUser{}).Where("id = ?", p.UserID).First(&ride.Passengers[index].User)
+	}
 	r.JSON(200, ride)
 }

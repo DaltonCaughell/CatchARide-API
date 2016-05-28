@@ -22,11 +22,13 @@ func Messages(r render.Render, user *models.DbUser, db *gorm.DB, params martini.
 	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
 
 	if ride.UserID == user.ID {
+		ride.Approved = true
 		db.Where("chat_id = ? && (to_user_id = ? || to_user_id = ?)", params["ChatID"], user.ID, 0).Find(&messages)
 	} else {
 		passenger := &models.Passenger{}
 		if !db.Where("ride_id = ?", ride.ID).First(passenger).RecordNotFound() {
 			if passenger.Approved {
+				ride.Approved = true
 				db.Where("chat_id = ? && (to_user_id = ? || to_user_id = ?)", params["ChatID"], user.ID, 0).Find(&messages)
 			} else {
 				db.Where("chat_id = ? && (to_user_id = ?)", params["ChatID"], user.ID).Find(&messages)

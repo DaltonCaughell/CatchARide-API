@@ -10,6 +10,7 @@ type ChatMessage struct {
 	ToUserID   uint
 	User       User
 	Type       string
+	Ack        bool
 }
 
 type Chat struct {
