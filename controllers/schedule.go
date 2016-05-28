@@ -90,6 +90,61 @@ func (data *SearchData) Validate(errors binding.Errors, req *http.Request) bindi
 	return *v.Errors.(*binding.Errors)
 }
 
+type RiderResponse struct {
+	To       string
+	From     string
+	ToLat    float64
+	ToLon    float64
+	FromLat  float64
+	FromLon  float64
+	User     *models.User
+	Car      *models.Car
+	IsDriver bool
+	Rating   uint8
+}
+
+func Rider(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	ride := &models.ScheduledRide{}
+	db.Where("id = ?", params["RideID"]).First(ride)
+	db.Where("id = ?", ride.CarID).First(&ride.Car)
+	db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&ride.User)
+	rider := &models.DbUser{}
+	db.Where("id = ?", params["UserID"]).First(rider)
+	if ride.UserID == rider.ID {
+		r.JSON(200, RiderResponse{
+			To:       ride.To,
+			From:     ride.From,
+			ToLat:    ride.ToLat,
+			ToLon:    ride.ToLon,
+			FromLat:  ride.FromLat,
+			FromLon:  ride.FromLon,
+			User:     &rider.User,
+			Car:      &ride.Car,
+			Rating:   models.GetUserRating(db, rider.ID),
+			IsDriver: true,
+		})
+	} else {
+		pass := &models.Passenger{}
+		if db.Where("user_id = ? AND ride_id = ?", rider.ID, ride.ID).First(pass).RecordNotFound() {
+			r.JSON(422, struct{}{})
+		} else {
+			db.Where("id = ?", pass.RideSearchID).First(&pass.Details)
+			r.JSON(200, RiderResponse{
+				To:       pass.Details.To,
+				From:     pass.Details.From,
+				ToLat:    pass.Details.ToLat,
+				ToLon:    pass.Details.ToLon,
+				FromLat:  pass.Details.FromLat,
+				FromLon:  pass.Details.FromLon,
+				User:     &rider.User,
+				Rating:   models.GetUserRating(db, rider.ID),
+				Car:      nil,
+				IsDriver: false,
+			})
+		}
+	}
+}
+
 func Join(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
 
 	ride := &models.ScheduledRide{}

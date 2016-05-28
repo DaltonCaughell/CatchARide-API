@@ -99,6 +99,7 @@ func main() {
 				r.Get("/join/:RideID/:SearchID", controllers.Join)
 				r.Get("/acceptpassenger/:RideID/:MessageID", controllers.AcceptPassenger)
 				r.Get("/rejectpassenger/:RideID/:MessageID", controllers.RejectPassenger)
+				r.Get("/rider/:RideID/:UserID", controllers.Rider)
 			}, middleware.BasicAuth)
 			r.Group("/chat", func(r martini.Router) {
 				r.Get("/messages/:ChatID", controllers.Messages)
