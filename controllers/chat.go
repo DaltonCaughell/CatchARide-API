@@ -61,8 +61,8 @@ func CashRequestAccept(r render.Render, user *models.DbUser, db *gorm.DB, params
 		Message:    fmt.Sprintf("You sent %s $%.2f", toUser.Name, req.CashRequest.Amount),
 		FromUserID: 0,
 		ToUserID:   user.ID,
-		Type:       "",
 		LinkedID:   req.CashRequest.ID,
+		Type:       "cash_info",
 	}
 	db.Save(message)
 	user.Balance -= req.CashRequest.Amount
@@ -122,6 +122,7 @@ func RequestCash(r render.Render, user *models.DbUser, db *gorm.DB, params marti
 		FromUserID: 0,
 		ToUserID:   user.ID,
 		LinkedID:   0,
+		Type:       "cash_info",
 	}
 	db.Save(message)
 }
