@@ -11,15 +11,16 @@ import (
 
 type User struct {
 	gorm.Model
-	Email    string
-	Name     string
-	Phone    string
-	Address  string
-	DLNumber string `gorm:"column:d_l_number"`
-	Balance  float64
-	Rating   uint8 `gorm:"-"`
-	Cars     []Car
-	Sessions []Session
+	Email      string
+	Name       string
+	Phone      string
+	Address    string
+	DLNumber   string `gorm:"column:d_l_number"`
+	Balance    float64
+	Rating     uint8   `gorm:"-"`
+	RatingReal float64 `gorm:"-"`
+	Cars       []Car
+	Sessions   []Session
 }
 
 type Car struct {

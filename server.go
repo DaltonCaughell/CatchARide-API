@@ -26,7 +26,7 @@ func main() {
 
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:  []string{"*"},
-		AllowMethods:  []string{"GET", "POST"},
+		AllowMethods:  []string{"GET", "POST", "PUT"},
 		AllowHeaders:  []string{"Origin", "Content-Type", "X-API-KEY"},
 		ExposeHeaders: []string{"Content-Length"},
 	}))
@@ -100,6 +100,7 @@ func main() {
 				r.Get("/ride/:RideID", controllers.Ride)
 				r.Get("/available/:SearchID", controllers.Available)
 				r.Get("/join/:RideID/:SearchID", controllers.Join)
+				r.Get("/leave/:RideID", controllers.Leave)
 				r.Get("/acceptpassenger/:RideID/:MessageID", controllers.AcceptPassenger)
 				r.Get("/rejectpassenger/:RideID/:MessageID", controllers.RejectPassenger)
 				r.Get("/rider/:RideID/:UserID", controllers.Rider)
@@ -107,6 +108,7 @@ func main() {
 			r.Group("/chat", func(r martini.Router) {
 				r.Get("/messages/:ChatID", controllers.Messages)
 				r.Post("/send/:ChatID", binding.Bind(controllers.SendData{}), controllers.Send)
+				r.Put("/rate/:MessageID/:RatingID/:Rating", controllers.Rate)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
@@ -118,6 +120,7 @@ func main() {
 	})
 
 	go models.FakeParking(db)
+	go models.SendRatings(db)
 
 	m.Run()
 }

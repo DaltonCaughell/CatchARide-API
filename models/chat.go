@@ -10,6 +10,9 @@ type ChatMessage struct {
 	ToUserID   uint
 	User       User
 	Type       string
+	Style      string
+	LinkedID   uint
+	Rating     Rating
 	Ack        bool
 }
 
