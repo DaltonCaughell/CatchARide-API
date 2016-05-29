@@ -14,7 +14,10 @@ type User struct {
 	Email    string
 	Name     string
 	Phone    string
+	Address  string
 	DLNumber string `gorm:"column:d_l_number"`
+	Balance  float64
+	Rating   uint8 `gorm:"-"`
 	Cars     []Car
 	Sessions []Session
 }

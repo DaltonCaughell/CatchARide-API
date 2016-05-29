@@ -83,10 +83,13 @@ func main() {
 			r.Group("/auth", func(r martini.Router) {
 				r.Post("/login", binding.Bind(controllers.LoginData{}), controllers.Login)
 				r.Post("/create", binding.Bind(controllers.CreateData{}), controllers.Create)
+				r.Post("/password", binding.Bind(controllers.ChangePasswordData{}), middleware.BasicAuth, controllers.ChangePassword)
 			})
 			r.Group("/user", func(r martini.Router) {
 				r.Get("/me", controllers.Me)
 				r.Post("/addcar", binding.Bind(controllers.AddCarData{}), controllers.AddCar)
+				r.Post("/me", binding.Bind(controllers.UpdateData{}), controllers.UpdateUser)
+				r.Post("/car", binding.Bind(controllers.UpdateCarData{}), controllers.UpdateCar)
 			}, middleware.BasicAuth)
 			r.Group("/parking", func(r martini.Router) {
 				r.Get("/all", controllers.All)

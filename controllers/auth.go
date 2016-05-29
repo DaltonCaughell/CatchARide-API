@@ -38,6 +38,10 @@ type CreateData struct {
 	Address  string `form:"Address" binding:"required"`
 }
 
+type ChangePasswordData struct {
+	Password string `form:"Password" binding:"required"`
+}
+
 func (data *LoginData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 
 	v := validation.NewValidation(&errors, data)
@@ -63,6 +67,34 @@ func (data *CreateData) Validate(errors binding.Errors, req *http.Request) bindi
 	v.Validate(&data.Address).Range(10, 255)
 
 	return *v.Errors.(*binding.Errors)
+}
+
+func (data *ChangePasswordData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
+
+	v := validation.NewValidation(&errors, data)
+
+	v.Validate(&data.Password).Range(8, 255)
+
+	return *v.Errors.(*binding.Errors)
+}
+
+func ChangePassword(r render.Render, user *models.DbUser, data ChangePasswordData, db *gorm.DB) {
+
+	salt := make([]byte, 32)
+	_, err := io.ReadFull(rand.Reader, salt)
+	if err != nil {
+		r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
+		log.Fatal(err)
+		return
+	}
+	hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
+
+	user.Hash = hash
+	user.Salt = salt
+
+	db.Save(user)
+
+	r.JSON(200, user.User)
 }
 
 func Login(data LoginData, db *gorm.DB, r render.Render) {
@@ -107,7 +139,7 @@ func Create(data CreateData, db *gorm.DB, r render.Render) {
 			return
 		}
 		hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
-		user := &models.DbUser{User: models.User{Name: data.Name, Email: data.Email, Phone: data.Phone}, Hash: hash, Salt: salt}
+		user := &models.DbUser{User: models.User{Name: data.Name, Email: data.Email, Phone: data.Phone, Address: data.Address}, Hash: hash, Salt: salt}
 		db.Create(user)
 		session, err := models.NewSession(db, user)
 		if err != nil {
