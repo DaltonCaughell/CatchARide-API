@@ -4,6 +4,8 @@ import (
 	"CatchARide-API/models"
 	"strconv"
 
+	"fmt"
+
 	"github.com/go-martini/martini"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/render"
@@ -11,6 +13,117 @@ import (
 
 type SendData struct {
 	Message string `form:"Message" binding:"required"`
+}
+
+type RequestCashData struct {
+	Amount float64
+}
+
+func CashRequestReject(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	req := &models.ChatMessage{}
+	db.Where("id = ?", params["MessageID"]).First(req)
+	db.Where("id = ?", req.LinkedID).First(&req.CashRequest)
+	req.CashRequest.Approved = false
+	req.Ack = true
+	message := &models.ChatMessage{
+		ChatID:     req.ChatID,
+		Message:    fmt.Sprintf("%s has rejected your request for $%.2f", user.Name, req.CashRequest.Amount),
+		FromUserID: user.ID,
+		ToUserID:   req.FromUserID,
+		Type:       "",
+		LinkedID:   req.CashRequest.ID,
+	}
+	db.Save(message)
+	db.Save(req)
+	db.Save(&req.CashRequest)
+	r.JSON(200, struct{}{})
+}
+
+func CashRequestAccept(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {
+	req := &models.ChatMessage{}
+	toUser := &models.DbUser{}
+	db.Where("id = ?", params["MessageID"]).First(req)
+	db.Where("id = ?", req.LinkedID).First(&req.CashRequest)
+	db.Where("id = ?", req.FromUserID).First(toUser)
+	req.CashRequest.Approved = false
+	req.Ack = true
+	message := &models.ChatMessage{
+		ChatID:     req.ChatID,
+		Message:    fmt.Sprintf("%s has accepted your request for $%.2f", user.Name, req.CashRequest.Amount),
+		FromUserID: user.ID,
+		ToUserID:   req.FromUserID,
+		Type:       "",
+		LinkedID:   req.CashRequest.ID,
+	}
+	db.Save(message)
+	message = &models.ChatMessage{
+		ChatID:     req.ChatID,
+		Message:    fmt.Sprintf("You sent %s $%.2f", toUser.Name, req.CashRequest.Amount),
+		FromUserID: 0,
+		ToUserID:   user.ID,
+		Type:       "",
+		LinkedID:   req.CashRequest.ID,
+	}
+	db.Save(message)
+	user.Balance -= req.CashRequest.Amount
+	toUser.Balance += req.CashRequest.Amount
+	db.Save(req)
+	db.Save(&req.CashRequest)
+	db.Save(user)
+	db.Save(toUser)
+	r.JSON(200, struct{}{})
+}
+
+func RequestCash(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params, data RequestCashData) {
+	ride := &models.ScheduledRide{}
+	db.Where("chat_id = ?", params["ChatID"]).First(ride)
+	var passengers []models.Passenger
+	db.Where("ride_id = ? AND approved = ? AND canceled = ?", ride.ID, true, false).Find(&passengers)
+	for _, p := range passengers {
+		if p.UserID == user.ID {
+			continue
+		}
+		request := &models.CashRequest{
+			UserID:   user.ID,
+			ToUserID: p.UserID,
+			Amount:   data.Amount,
+		}
+		db.Save(request)
+		message := &models.ChatMessage{
+			ChatID:     ride.ChatID,
+			Message:    fmt.Sprintf("%s has requested $%.2f from you", user.Name, request.Amount),
+			FromUserID: user.ID,
+			ToUserID:   p.UserID,
+			Type:       "cash_req",
+			LinkedID:   request.ID,
+		}
+		db.Save(message)
+	}
+	if ride.UserID != user.ID {
+		request := &models.CashRequest{
+			UserID:   user.ID,
+			ToUserID: ride.UserID,
+			Amount:   data.Amount,
+		}
+		db.Save(request)
+		message := &models.ChatMessage{
+			ChatID:     ride.ChatID,
+			Message:    fmt.Sprintf("%s has requested $%.2f from you", user.Name, request.Amount),
+			FromUserID: user.ID,
+			ToUserID:   ride.UserID,
+			Type:       "cash_req",
+			LinkedID:   request.ID,
+		}
+		db.Save(message)
+	}
+	message := &models.ChatMessage{
+		ChatID:     ride.ChatID,
+		Message:    fmt.Sprintf("You requested $%.2f from the group", data.Amount),
+		FromUserID: 0,
+		ToUserID:   user.ID,
+		LinkedID:   0,
+	}
+	db.Save(message)
 }
 
 func Rate(r render.Render, user *models.DbUser, db *gorm.DB, params martini.Params) {

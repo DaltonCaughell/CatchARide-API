@@ -109,6 +109,9 @@ func main() {
 				r.Get("/messages/:ChatID", controllers.Messages)
 				r.Post("/send/:ChatID", binding.Bind(controllers.SendData{}), controllers.Send)
 				r.Put("/rate/:MessageID/:RatingID/:Rating", controllers.Rate)
+				r.Post("/requestcash/:ChatID", binding.Bind(controllers.RequestCashData{}), controllers.RequestCash)
+				r.Put("/cashrequestaccept/:MessageID", controllers.CashRequestAccept)
+				r.Put("/cashrequestreject/:MessageID", controllers.CashRequestReject)
 			}, middleware.BasicAuth)
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
