@@ -10,20 +10,22 @@ import (
 
 type ParkingLot struct {
 	gorm.Model
-	Name      string
-	Available uint16
-	Total     uint16
-	Lat       float64
-	Lon       float64
-	Open      uint8
-	Close     uint8
-	IsOpen    bool `gorm:"-"`
+	Name         string
+	Available    uint16
+	Total        uint16
+	Lat          float64
+	Lon          float64
+	Open         uint8
+	Close        uint8
+	IsOpen       bool `gorm:"-"`
+	Notification ParkingLotNotification
 }
 
 type ParkingLotNotification struct {
 	gorm.Model
 	UserID       uint
 	ParkingLotID uint
+	Notify       bool
 }
 
 func FakeParking(db *gorm.DB) {

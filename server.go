@@ -93,6 +93,7 @@ func main() {
 			}, middleware.BasicAuth)
 			r.Group("/parking", func(r martini.Router) {
 				r.Get("/all", controllers.All)
+				r.Put("/notify/:LotID/:Notify", controllers.SetParkingNotify)
 			}, middleware.BasicAuth)
 			r.Group("/schedule", func(r martini.Router) {
 				r.Post("/search", binding.Bind(controllers.SearchData{}), controllers.Search)
