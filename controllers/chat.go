@@ -185,6 +185,7 @@ func Messages(r render.Render, user *models.DbUser, db *gorm.DB, params martini.
 				messages[index].Rating = models.Rating{}
 			}
 		}
+		models.SetReadMessage(message.ChatID, message.ID, user.ID, db)
 	}
 
 	r.JSON(200, struct {

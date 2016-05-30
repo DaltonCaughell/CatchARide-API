@@ -449,6 +449,13 @@ func GetScheduledRides(r render.Render, user *models.DbUser, db *gorm.DB) {
 	for index, ride := range rides {
 		db.Where("id = ?", ride.CarID).First(&rides[index].Car)
 		db.Model(&models.DbUser{}).Where("id = ?", ride.UserID).First(&rides[index].User)
+		all := false
+		if ride.UserID == user.ID {
+			all = true
+		} else if ride.Approved && !ride.Left {
+			all = true
+		}
+		rides[index].UnreadMessages = models.HasUnreadMessages(ride.ChatID, user.ID, all, db)
 	}
 	r.JSON(200, rides)
 }
