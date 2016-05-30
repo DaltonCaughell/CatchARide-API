@@ -164,7 +164,7 @@ func Forgot(r render.Render, data ForgotData, db *gorm.DB, sg *sendgrid.SGClient
 		message.AddToName(user.Name)
 		message.SetSubject("CatchARide Password Reset")
 		message.SetFrom("admin@catcharide.today")
-		message.SetHTML(fmt.Sprintf("<html><body>Click <a href='http://192.168.1.6:8000/#/reset/%s'>here</a> to set a new password.</body></html>", forgot.TempKey))
+		message.SetHTML(fmt.Sprintf("<html><body>Click <a href='http://www.catcharide.today/#/reset/%s'>here</a> to set a new password.</body></html>", forgot.TempKey))
 		if r := sg.Send(message); r == nil {
 			fmt.Println("Email sent!")
 		} else {
