@@ -4,7 +4,9 @@ import (
 	"CatchARide-API/controllers"
 	"CatchARide-API/middleware"
 	"CatchARide-API/models"
+	"fmt"
 	"log"
+	"os"
 
 	"CatchARide-API/config"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/cors"
 	"github.com/martini-contrib/render"
+	"github.com/sendgrid/sendgrid-go"
 	"gopkg.in/gcfg.v1"
 )
 
@@ -78,11 +81,23 @@ func main() {
 
 	m.Map(db)
 
+	sendgridKey := os.Getenv("SENDGRID_API_KEY")
+	if sendgridKey == "" {
+		fmt.Println("Environment variable SENDGRID_API_KEY is undefined. Did you forget to source sendgrid.env?")
+		MAINTENANCE_MODE = true
+	}
+
+	sg := sendgrid.NewSendGridClientWithApiKey(sendgridKey)
+
+	m.Map(sg)
+
 	m.Group("/api", func(r martini.Router) {
 		r.Group("/v1", func(r martini.Router) {
 			r.Group("/auth", func(r martini.Router) {
 				r.Post("/login", binding.Bind(controllers.LoginData{}), controllers.Login)
 				r.Post("/create", binding.Bind(controllers.CreateData{}), controllers.Create)
+				r.Post("/forgot", binding.Bind(controllers.ForgotData{}), controllers.Forgot)
+				r.Post("/reset", binding.Bind(controllers.ResetData{}), controllers.Reset)
 				r.Post("/password", binding.Bind(controllers.ChangePasswordData{}), middleware.BasicAuth, controllers.ChangePassword)
 			})
 			r.Group("/user", func(r martini.Router) {

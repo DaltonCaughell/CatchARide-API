@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"CatchARide-API/lib/utils"
 	"CatchARide-API/models"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -16,6 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
+	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -78,13 +81,106 @@ func (data *ChangePasswordData) Validate(errors binding.Errors, req *http.Reques
 	return *v.Errors.(*binding.Errors)
 }
 
+type ResetData struct {
+	Password string `form:"Password" binding:"required"`
+	TempKey  string `form:"TempKey" binding:"required"`
+}
+
+func (data *ResetData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
+
+	v := validation.NewValidation(&errors, data)
+
+	v.Validate(&data.Password).Range(8, 255)
+
+	return *v.Errors.(*binding.Errors)
+}
+
+func Reset(r render.Render, data ResetData, db *gorm.DB) {
+	forgot := &models.ForgotPassword{}
+	if db.Where("temp_key = ?", data.TempKey).First(forgot).RecordNotFound() {
+		r.JSON(200, struct{}{})
+	} else {
+		user := &models.DbUser{}
+		db.Where("id = ?", forgot.UserID).First(user)
+		salt := make([]byte, 32)
+		_, err := io.ReadFull(rand.Reader, salt)
+		if err != nil {
+			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
+			log.Print(err)
+			return
+		}
+		hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
+
+		user.Hash = hash
+		user.Salt = salt
+
+		db.Save(user)
+
+		session, err := models.NewSession(db, user)
+		if err != nil {
+			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
+			log.Print(err)
+			return
+		}
+
+		forgot.Used = true
+
+		db.Save(forgot)
+
+		r.JSON(200, SessionResponse{Response: Response{Code: 0, Error: "", ErrorOn: ""}, Session: session, User: &user.User})
+	}
+}
+
+type ForgotData struct {
+	Email string `form:"Email" binding:"required"`
+}
+
+func (data *ForgotData) Validate(errors binding.Errors, req *http.Request) binding.Errors {
+
+	v := validation.NewValidation(&errors, data)
+
+	data.Email = strings.ToLower(data.Email)
+
+	v.Validate(&data.Email).TrimSpace().Email()
+
+	return *v.Errors.(*binding.Errors)
+}
+
+func Forgot(r render.Render, data ForgotData, db *gorm.DB, sg *sendgrid.SGClient) {
+	user := &models.DbUser{}
+	if !db.Where("email = ?", data.Email).First(user).RecordNotFound() {
+		tempKey := utils.RandString(128)
+		forgot := &models.ForgotPassword{}
+		if db.Where("user_id = ? AND used = ?", user.ID, false).First(forgot).RecordNotFound() {
+			forgot = &models.ForgotPassword{
+				UserID: user.ID,
+				Used:   false,
+			}
+		}
+		forgot.TempKey = tempKey
+		db.Save(forgot)
+		message := sendgrid.NewMail()
+		message.AddTo(user.Email)
+		message.AddToName(user.Name)
+		message.SetSubject("CatchARide Password Reset")
+		message.SetFrom("admin@catcharide.today")
+		message.SetHTML(fmt.Sprintf("<html><body>Click <a href='http://192.168.1.6:8000/#/reset/%s'>here</a> to set a new password.</body></html>", forgot.TempKey))
+		if r := sg.Send(message); r == nil {
+			fmt.Println("Email sent!")
+		} else {
+			fmt.Println(r)
+		}
+	}
+	r.JSON(200, struct{}{})
+}
+
 func ChangePassword(r render.Render, user *models.DbUser, data ChangePasswordData, db *gorm.DB) {
 
 	salt := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, salt)
 	if err != nil {
 		r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
-		log.Fatal(err)
+		log.Print(err)
 		return
 	}
 	hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
@@ -115,7 +211,7 @@ func Login(data LoginData, db *gorm.DB, r render.Render) {
 		session, err := models.NewSession(db, user)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
-			log.Fatal(err)
+			log.Print(err)
 			return
 		}
 		r.JSON(200, SessionResponse{Response: Response{Code: 0, Error: "", ErrorOn: ""}, Session: session, User: &user.User})
@@ -135,7 +231,7 @@ func Create(data CreateData, db *gorm.DB, r render.Render) {
 		_, err := io.ReadFull(rand.Reader, salt)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
-			log.Fatal(err)
+			log.Print(err)
 			return
 		}
 		hash := pbkdf2.Key([]byte(data.Password), salt, 4096, 255, sha1.New)
@@ -144,7 +240,7 @@ func Create(data CreateData, db *gorm.DB, r render.Render) {
 		session, err := models.NewSession(db, user)
 		if err != nil {
 			r.JSON(500, Response{Code: 500, Error: "Internal Error", ErrorOn: ""})
-			log.Fatal(err)
+			log.Print(err)
 			return
 		}
 		r.JSON(200, SessionResponse{Response: Response{Code: 0, Error: "", ErrorOn: ""}, Session: session, User: &user.User})

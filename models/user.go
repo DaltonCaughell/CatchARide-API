@@ -44,6 +44,13 @@ type DbUser struct {
 	Salt []byte
 }
 
+type ForgotPassword struct {
+	gorm.Model
+	UserID  uint
+	TempKey string
+	Used    bool
+}
+
 func (u DbUser) TableName() string {
 	return "users"
 }
@@ -63,6 +70,7 @@ func DbUp(db *gorm.DB) {
 	db.AutoMigrate(&Rating{})
 	db.AutoMigrate(&CashRequest{})
 	db.AutoMigrate(&ReadMessage{})
+	db.AutoMigrate(&ForgotPassword{})
 	return
 }
 
@@ -70,7 +78,7 @@ func NewSession(db *gorm.DB, user *DbUser) (*Session, error) {
 	base := make([]byte, 128)
 	_, err := io.ReadFull(rand.Reader, base)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 	}
 	session := &Session{UserID: user.User.ID, ApiKey: base64.RawStdEncoding.EncodeToString(base)}
