@@ -129,6 +129,9 @@ func main() {
 				r.Put("/cashrequestaccept/:MessageID", controllers.CashRequestAccept)
 				r.Put("/cashrequestreject/:MessageID", controllers.CashRequestReject)
 			}, middleware.BasicAuth)
+			r.Group("/admin", func(r martini.Router) {
+				r.Get("/seed/:UserID", controllers.SeedRides)
+			})
 			r.Group("/*", func(r martini.Router) {
 			}, middleware.BasicAuth)
 		})

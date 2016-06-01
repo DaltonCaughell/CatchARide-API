@@ -345,14 +345,14 @@ func Available(r render.Render, user *models.DbUser, db *gorm.DB, params martini
 	db.Where("id = ?", params["SearchID"]).First(data)
 	if data.From == "SCHOOL" {
 		db.Where("`from` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ? AND seats > ? AND canceled = ?", "SCHOOL",
-			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0, false).Find(&rides)
+			data.DateTime.Add(time.Minute*30).Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0, false).Find(&rides)
 		for index, ride := range rides {
 			p := geo.NewPoint(data.ToLat, data.ToLon)
 			rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.ToLat, ride.ToLon))
 		}
 	} else {
 		db.Where("`to` = ? AND date_time <= ? AND date_time > ? AND user_id  <> ? AND seats > ? AND canceled = ?", "SCHOOL",
-			data.DateTime.Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0, false).Find(&rides)
+			data.DateTime.Add(time.Minute*30).Format(config.MYSQL_DATE_FORMAT), data.DateTime.Add(time.Minute*-30).Format(config.MYSQL_DATE_FORMAT), user.ID, 0, false).Find(&rides)
 		for index, ride := range rides {
 			p := geo.NewPoint(data.FromLat, data.FromLon)
 			rides[index].DistFrom = p.GreatCircleDistance(geo.NewPoint(ride.FromLat, ride.FromLon))
